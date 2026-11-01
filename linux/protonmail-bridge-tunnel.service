@@ -1,0 +1,19 @@
+[Unit]
+Description=SSH tunnel to the Proton Mail Bridge on the bridge host (IMAP 1143, SMTP 1025)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Forwards this machine's loopback to the bridge host's loopback. ssh exits if the
+# link drops (keepalive) and systemd restarts it with exponential backoff
+# (5s -> 5min); no polling involved. RestartSteps needs systemd >= 254.
+ExecStart=/usr/bin/ssh -N -o BatchMode=yes -o ConnectTimeout=10 -o ExitOnForwardFailure=yes \
+  -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+  -L 127.0.0.1:1143:127.0.0.1:1143 -L 127.0.0.1:1025:127.0.0.1:1025 @BRIDGE_HOST@
+Restart=always
+RestartSec=5
+RestartSteps=6
+RestartMaxDelaySec=300
+
+[Install]
+WantedBy=default.target
